@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+/* style global của bạn, nếu có */
+:root {
+  color-scheme: light dark;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
