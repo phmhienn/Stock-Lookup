@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import Sidebar from "./layout/Sidebar";
 import RightBar from "./layout/RightBar";
 import Card from "./ui/Card";
@@ -7,20 +7,21 @@ import Block from "./ui/Block";
 import Text from "./ui/Text";
 import Button from "./ui/Button";
 import IconText from "./composite/IconText";
+import BackToTop from "./ui/BackToTop";
 
-export default function StockLookupDashboard() {
+export default function StockLookup() {
   const [sidebarOpen, setSidebarOpen] = useState(true); // <-- state điều khiển
 
-  const fakeWatchlist = ["FPT", "VNM", "ACB"];
-  const fakeRecent = (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {fakeWatchlist.map((k) => (
-        <Button key={k} variant="secondary" size="sm">
-          {k}
-        </Button>
-      ))}
-    </div>
-  );
+  //  const fakeWatchlist = ["FPT", "VNM", "ACB"];
+  // const fakeRecent = (
+  //   <div className="mt-2 flex flex-wrap gap-2">
+  //     {fakeWatchlist.map((k) => (
+  //       <Button key={k} variant="secondary" size="sm">
+  //         {k}
+  //       </Button>
+  //     ))}
+  //   </div>
+  // );
 
   return (
     <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950">
@@ -52,7 +53,7 @@ export default function StockLookupDashboard() {
 
         {/* ===== Header: chỉ phủ phần nội dung (cột 2-3) ===== */}
         <header
-          className="col-start-2 col-end-4 row-start-1 sticky top-0 z-30
+          className="col-start-2 col-end-3 row-start-1 z-30
                            flex items-center gap-3 border-b border-neutral-200/70
                            bg-white/70 px-4 py-3 backdrop-blur
                            dark:border-neutral-800 dark:bg-neutral-900/60"
@@ -64,7 +65,7 @@ export default function StockLookupDashboard() {
             aria-pressed={sidebarOpen}
             className="rounded-lg p-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
           >
-            <Menu className="h-5 w-5" />
+            <PanelLeft className="h-5 w-5" />
           </button>
 
           <div className="flex-1">
@@ -111,19 +112,13 @@ export default function StockLookupDashboard() {
         </main>
 
         {/* ===== Rightbar ===== */}
-        <aside className="col-start-3 col-end-4 row-start-2 p-6">
-          <RightBar
-            watchlist={fakeWatchlist.map((sym) => (
-              <div key={sym} className="flex items-center justify-between py-2">
-                <span className="text-sm font-medium">{sym}</span>
-                <Button variant="secondary" size="sm">
-                  Open
-                </Button>
-              </div>
-            ))}
-            recent={fakeRecent}
-          />
+        <aside className="col-start-3 col-end-4 row-start-1 row-span-2 p-6">
+          <RightBar featuredSymbols={["FPT", "VNM", "ACB"]} />
         </aside>
+      </div>
+      <div className="min-h-screen bg-neutral-100 dark:bg-neutral-950">
+        {/* grid / nội dung của bạn */}
+        <BackToTop threshold={240} />
       </div>
     </div>
   );

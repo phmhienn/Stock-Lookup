@@ -1,10 +1,10 @@
-import StockLookupDashboard from "./components/StockLookupDashboard";
+import StockLookup from "./components/StockLookup";
 
 function App() {
   return (
     <>
       <div>
-        <StockLookupDashboard />
+        <StockLookup />
       </div>
     </>
   );
