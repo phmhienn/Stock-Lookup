@@ -15,6 +15,10 @@ import {
   XAxis,
   CartesianGrid,
 } from "recharts";
+import { useState, useEffect } from "react";
+import { useFinnhubSocket } from "../../hooks/useFinnhubSocket";
+const FINNHUB_TOKEN = "d2q37kpr01qnf9nnag6gd2q37kpr01qnf9nnag70"; // Thay bằng key của bạn
+const featuredSymbols = ["AAPL", "MSFT", "GOOGL"]; // Chọn mã nào Finnhub support (US/Global sẽ nhiều mã hơn, VN hơi ít)
 
 /**
  * RightBar: Notifications • Featured Prices • Activities
@@ -22,6 +26,25 @@ import {
  *  - featuredSymbols?: string[]  // mặc định: ["FPT","VNM","ACB"]
  */
 export default function RightBar({ featuredSymbols = ["FPT", "VNM", "ACB"] }) {
+  // 1. Lấy giá realtime qua socket
+  const prices = useFinnhubSocket(featuredSymbols, FINNHUB_TOKEN);
+  // 2. Tích luỹ sparkline ngắn hạn cho từng mã
+  const [chartData, setChartData] = useState({});
+  const chartLen = 24; // số tick gần nhất
+  useEffect(() => {
+    for (const sym of featuredSymbols) {
+      if (prices[sym]?.price) {
+        setChartData((prev) => {
+          const prevSeries = prev[sym] ?? [];
+          const newSeries = [
+            ...prevSeries,
+            { price: prices[sym].price, time: Date.now() },
+          ].slice(-chartLen);
+          return { ...prev, [sym]: newSeries };
+        });
+      }
+    }
+  }, [prices]);
   // mock notifications
   const notifications = [
     { id: 1, icon: "🛠️", title: "You fixed a bug.", time: "Just now" },
@@ -92,45 +115,53 @@ export default function RightBar({ featuredSymbols = ["FPT", "VNM", "ACB"] }) {
         }
       >
         <div className="space-y-3">
-          {featured.map((f) => (
-            <button
-              key={f.symbol}
-              className="w-full rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors"
-              onClick={() => console.log("open", f.symbol)}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-semibold tracking-tight">
-                    {f.symbol}
+          {featuredSymbols.map((sym) => {
+            const now = prices[sym]?.price;
+            const prev =
+              chartData[sym]?.length > 1
+                ? chartData[sym][chartData[sym].length - 2].price
+                : now;
+            const change = now && prev ? +(now - prev).toFixed(2) : 0;
+            const changePct =
+              now && prev ? +((change / prev) * 100).toFixed(2) : 0;
+            return (
+              <button
+                key={sym}
+                className="w-full rounded-xl border border-neutral-200/70 dark:border-neutral-800 p-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-800/60 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-semibold tracking-tight">
+                      {sym}
+                    </div>
+                    <div className="mt-0.5 text-xs text-neutral-500">
+                      {change >= 0 ? "+" : ""}
+                      {change} ({changePct}%)
+                    </div>
                   </div>
-                  <div className="mt-0.5 text-xs text-neutral-500">
-                    {f.change >= 0 ? "+" : ""}
-                    {f.change} ({f.changePct}%)
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">
+                      {now ? formatCurrency(now) : "--"}
+                    </div>
+                    <div
+                      className={[
+                        "inline-flex items-center gap-1 text-xs",
+                        change >= 0 ? "text-emerald-600" : "text-rose-600",
+                      ].join(" ")}
+                    >
+                      <ArrowUpRight
+                        className={`h-3 w-3 ${change < 0 ? "rotate-180" : ""}`}
+                      />
+                      {changePct}%
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold">
-                    {formatCurrency(f.price)}
-                  </div>
-                  <div
-                    className={[
-                      "inline-flex items-center gap-1 text-xs",
-                      f.change >= 0 ? "text-emerald-600" : "text-rose-600",
-                    ].join(" ")}
-                  >
-                    <ArrowUpRight
-                      className={`h-3 w-3 ${f.change < 0 ? "rotate-180" : ""}`}
-                    />
-                    {f.changePct}%
-                  </div>
+                <div className="mt-2 h-8">
+                  <MiniSparkline data={chartData[sym] || []} up={change >= 0} />
                 </div>
-              </div>
-
-              <div className="mt-2 h-14">
-                <MiniSparkline data={f.series} up={f.change >= 0} />
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </Card>
 
@@ -163,37 +194,30 @@ export default function RightBar({ featuredSymbols = ["FPT", "VNM", "ACB"] }) {
 
 /* ---- Mini sparkline chart ---- */
 function MiniSparkline({ data, up }) {
+  // Phải map lại cho recharts: [{price, time}] -> [{close, date}]
+  const chart = data.map((d, i) => ({
+    close: d.price,
+    date: i + 1,
+  }));
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={data} margin={{ left: 0, right: 0, top: 5, bottom: 0 }}>
-        <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
+      <AreaChart data={chart} margin={{ left: 0, right: 0, top: 2, bottom: 0 }}>
         <XAxis dataKey="date" hide />
         <YAxis dataKey="close" hide domain={["dataMin", "dataMax"]} />
-        <Tooltip
-          contentStyle={{
-            background: "#111827",
-            color: "white",
-            border: "1px solid #1f2937",
-            borderRadius: 12,
-            padding: 10,
-          }}
-          formatter={(v) => [v, "Close"]}
-          labelFormatter={(l) => `Date: ${l}`}
-        />
         <Area
           type="monotone"
           dataKey="close"
-          stroke={up ? "rgb(16,185,129)" : "rgb(244,63,94)"} // Tailwind emerald-500 / rose-500
+          stroke={up ? "rgb(16,185,129)" : "rgb(244,63,94)"}
           fill={up ? "rgba(16,185,129,0.12)" : "rgba(244,63,94,0.12)"}
-          strokeWidth={2}
+          strokeWidth={1.6}
           dot={false}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
-/* ---- helpers ---- */
 function formatCurrency(v, currency = "VND") {
   try {
     return new Intl.NumberFormat(currency === "VND" ? "vi-VN" : "en-US", {

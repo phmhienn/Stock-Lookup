@@ -112,7 +112,18 @@ export default function StockLookup() {
         </main>
 
         {/* ===== Rightbar ===== */}
-        <aside className="col-start-3 col-end-4 row-start-1 row-span-2 p-6">
+        {/* <aside className="col-start-3 col-end-4 row-start-1 row-span-2 p-6">
+          <RightBar featuredSymbols={["FPT", "VNM", "ACB"]} />
+        </aside> */}
+        <aside
+          className={[
+            "col-start-3 col-end-4 row-span-2 overflow-hidden", // layout
+            "border-l border-neutral-200/70 dark:border-neutral-800", // viền
+            "bg-white/80 dark:bg-neutral-900/60", // nền
+            "transition-all duration-300 ease-in-out", // ANIMATION
+            "w-[360px] p-4", // width & padding
+          ].join(" ")}
+        >
           <RightBar featuredSymbols={["FPT", "VNM", "ACB"]} />
         </aside>
       </div>
